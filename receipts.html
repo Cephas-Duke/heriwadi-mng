@@ -84,18 +84,26 @@
       <span onclick="closeStudentManager()" style="position:absolute; top:10px; right:20px; font-size:18px; cursor:pointer;">×</span>
       <h3>Add New Student</h3>
       <form id="studentForm">
-        <label>Name:</label><input type="text" id="studentName" required>
-        <label>Class:</label><input type="text" id="studentClass" required>
-        <label>Phone:</label><input type="text" id="phone" required>
-        <label>Tuition:</label><input type="number" id="tuition" value="0">
-        <label>Adm Fee:</label><input type="number" id="adm" value="0">
-        <label>Book Fund:</label><input type="number" id="books" value="0">
-        <label>Stationery:</label><input type="number" id="stationery" value="0">
-        <label>Uniform:</label><input type="number" id="uniform" value="0">
-        <label>Lunch:</label><input type="number" id="lunch" value="0">
-        <label>Transport:</label><input type="number" id="transport" value="0">
-        <button type="submit">Add Student</button>
-      </form>
+  <label>Name:</label><input type="text" id="studentName" required>
+  <label>Class:</label>
+  <select id="studentClass" required>
+    <option value="">Select Class</option>
+    <option value="Play Group">Play Group</option>
+    <option value="PP1">PP1</option>
+    <option value="PP2">PP2</option>
+    <option value="Grade 1">Grade 1</option>
+    <option value="Grade 2">Grade 2</option>
+    <option value="Grade 3">Grade 3</option>
+    <option value="Grade 4">Grade 4</option>
+    <option value="Grade 5">Grade 5</option>
+    <option value="Grade 6">Grade 6</option>
+  </select>
+  <label>Phone:</label><input type="text" id="phone" required>
+  <label>Tuition:</label><input type="number" id="tuition" value="0">
+  <label>Admission Fee:</label><input type="number" id="adm" value="0">
+  <label>Book Fund:</label><input type="number" id="books" value="0">
+  <button type="submit">Add Student</button>
+</form>
       <hr>
       <ul id="studentList"></ul>
     </div>
@@ -359,60 +367,52 @@
     }
 
     // Add new student with validation
-    document.getElementById("studentForm").addEventListener("submit", async function(e) {
-      e.preventDefault();
-      
-      const name = document.getElementById("studentName").value.trim();
-      const sclass = document.getElementById("studentClass").value.trim();
-      const phone = document.getElementById("phone").value.trim();
-      const tuition = Number(document.getElementById("tuition").value) || 0;
-      const adm = Number(document.getElementById("adm").value) || 0;
-      const books = Number(document.getElementById("books").value) || 0;
-      const stationery = Number(document.getElementById("stationery").value) || 0;
-      const uniform = Number(document.getElementById("uniform").value) || 0;
-      const lunch = Number(document.getElementById("lunch").value) || 0;
-      const transport = Number(document.getElementById("transport").value) || 0;
-      
-      if (!name || !sclass || !phone) {
-        showStatus("Please fill in all required fields (Name, Class, Phone)", "error");
-        return;
-      }
+document.getElementById("studentForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+  
+  const name = document.getElementById("studentName").value.trim();
+  const sclass = document.getElementById("studentClass").value.trim();
+  const phone = document.getElementById("phone").value.trim();
+  const tuition = Number(document.getElementById("tuition").value) || 0;
+  const adm = Number(document.getElementById("adm").value) || 0;
+  const books = Number(document.getElementById("books").value) || 0;
+  
+  if (!name || !sclass || !phone) {
+    showStatus("Please fill in all required fields (Name, Class, Phone)", "error");
+    return;
+  }
 
-      const total = tuition + adm + books + stationery + uniform + lunch + transport;
-      const newStudent = { 
-        name, 
-        class: sclass, 
-        phone, 
-        tuition, 
-        adm, 
-        books, 
-        stationery, 
-        uniform, 
-        lunch, 
-        transport, 
-        total, 
-        paid: 0, 
-        balance: total 
-      };
-      
-      try {
-        const { error } = await supabase
-          .from('students')
-          .insert([newStudent]);
+  const total = tuition + adm + books;
+  const newStudent = { 
+    name, 
+    class: sclass, 
+    phone, 
+    tuition, 
+    adm, 
+    books, 
+    paid: 0, 
+    total, 
+    balance: total 
+  };
+  
+  try {
+    const { error } = await supabase
+      .from('students')
+      .insert([newStudent]);
 
-        if (error) {
-          throw new Error(error.message);
-        }
+    if (error) {
+      throw new Error(error.message);
+    }
 
-        this.reset();
-        await Promise.all([renderStudentList(), populateStudents()]);
-        showStatus(`Student ${name} added successfully!`, "success");
-        
-      } catch (error) {
-        console.error('Error adding student:', error);
-        showStatus(`Error adding student: ${error.message}`, "error");
-      }
-    });
+    this.reset();
+    await Promise.all([renderStudentList(), populateStudents()]);
+    showStatus(`Student ${name} added successfully!`, "success");
+    
+  } catch (error) {
+    console.error('Error adding student:', error);
+    showStatus(`Error adding student: ${error.message}`, "error");
+  }
+});
 
     // Render student list in modal
     async function renderStudentList() {
