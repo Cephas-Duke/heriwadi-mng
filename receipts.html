@@ -84,26 +84,26 @@
       <span onclick="closeStudentManager()" style="position:absolute; top:10px; right:20px; font-size:18px; cursor:pointer;">×</span>
       <h3>Add New Student</h3>
       <form id="studentForm">
-  <label>Name:</label><input type="text" id="studentName" required>
-  <label>Class:</label>
-  <select id="studentClass" required>
-    <option value="">Select Class</option>
-    <option value="Play Group">Play Group</option>
-    <option value="PP1">PP1</option>
-    <option value="PP2">PP2</option>
-    <option value="Grade 1">Grade 1</option>
-    <option value="Grade 2">Grade 2</option>
-    <option value="Grade 3">Grade 3</option>
-    <option value="Grade 4">Grade 4</option>
-    <option value="Grade 5">Grade 5</option>
-    <option value="Grade 6">Grade 6</option>
-  </select>
-  <label>Phone:</label><input type="text" id="phone" required>
-  <label>Tuition:</label><input type="number" id="tuition" value="0">
-  <label>Admission Fee:</label><input type="number" id="adm" value="0">
-  <label>Book Fund:</label><input type="number" id="books" value="0">
-  <button type="submit">Add Student</button>
-</form>
+        <label>Name:</label><input type="text" id="studentName" required>
+        <label>Class:</label>
+        <select id="studentClass" required>
+          <option value="">Select Class</option>
+          <option value="Play Group">Play Group</option>
+          <option value="PP1">PP1</option>
+          <option value="PP2">PP2</option>
+          <option value="Grade 1">Grade 1</option>
+          <option value="Grade 2">Grade 2</option>
+          <option value="Grade 3">Grade 3</option>
+          <option value="Grade 4">Grade 4</option>
+          <option value="Grade 5">Grade 5</option>
+          <option value="Grade 6">Grade 6</option>
+        </select>
+        <label>Phone:</label><input type="text" id="phone" required>
+        <label>Tuition:</label><input type="number" id="tuition" value="0">
+        <label>Admission Fee:</label><input type="number" id="adm" value="0">
+        <label>Book Fund:</label><input type="number" id="books" value="0">
+        <button type="submit">Add Student</button>
+      </form>
       <hr>
       <ul id="studentList"></ul>
     </div>
@@ -144,7 +144,6 @@
           return;
         }
 
-        // Clear existing options
         studentSelect.innerHTML = "<option value=''>Select a student...</option>";
         
         if (!data || data.length === 0) {
@@ -152,11 +151,10 @@
           return;
         }
 
-        // Add each student to dropdown
         data.forEach((student) => {
           const option = document.createElement("option");
           option.value = student.id;
-          option.textContent = `${student.name} (${student.class}) - Balance: KES ${(student.balance || 0).toLocaleString()}`;
+          option.textContent = `${student.name || '-'} (${student.class || '-'}) - Balance: KES ${(student.balance || 0).toLocaleString()}`;
           studentSelect.appendChild(option);
         });
         
@@ -205,7 +203,6 @@
         data.forEach((receipt, index) => {
           const row = receiptsTable.insertRow();
           
-          // Use joined student data if available, fallback to receipt data
           const studentName = receipt.students?.name || receipt.name || 'Unknown Student';
           const studentClass = receipt.students?.class || receipt.class || 'Unknown Class';
           
@@ -262,7 +259,6 @@
       showStatus("Processing payment...", "loading");
 
       try {
-        // Fetch student data
         const { data: student, error: studentError } = await supabase
           .from('students')
           .select('*')
@@ -277,13 +273,11 @@
           throw new Error('Student not found');
         }
 
-        // Calculate new totals
         const currentPaid = Number(student.paid || 0);
         const totalFees = Number(student.total || 0);
         const updatedPaid = currentPaid + amount;
         const updatedBalance = totalFees - updatedPaid;
 
-        // Update student record
         const { error: updateError } = await supabase
           .from('students')
           .update({ 
@@ -296,7 +290,6 @@
           throw new Error(`Failed to update student: ${updateError.message}`);
         }
 
-        // Create receipt record
         const receiptData = { 
           student_id: studentId,
           name: student.name, 
@@ -317,7 +310,6 @@
           throw new Error(`Failed to save receipt: ${receiptError.message}`);
         }
 
-        // Try to send SMS (optional - don't fail if this doesn't work)
         try {
           const smsResponse = await fetch("/send-sms", {
             method: "POST",
@@ -343,7 +335,6 @@
           showStatus("Receipt saved successfully! (SMS service unavailable)", "success");
         }
 
-        // Reset form and refresh data
         this.reset();
         await Promise.all([updateReceiptTable(), populateStudents()]);
 
@@ -367,52 +358,55 @@
     }
 
     // Add new student with validation
-document.getElementById("studentForm").addEventListener("submit", async function(e) {
-  e.preventDefault();
-  
-  const name = document.getElementById("studentName").value.trim();
-  const sclass = document.getElementById("studentClass").value.trim();
-  const phone = document.getElementById("phone").value.trim();
-  const tuition = Number(document.getElementById("tuition").value) || 0;
-  const adm = Number(document.getElementById("adm").value) || 0;
-  const books = Number(document.getElementById("books").value) || 0;
-  
-  if (!name || !sclass || !phone) {
-    showStatus("Please fill in all required fields (Name, Class, Phone)", "error");
-    return;
-  }
+    document.getElementById("studentForm").addEventListener("submit", async function(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById("studentName").value.trim();
+      const sclass = document.getElementById("studentClass").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const tuition = Number(document.getElementById("tuition").value) || 0;
+      const adm = Number(document.getElementById("adm").value) || 0;
+      const books = Number(document.getElementById("books").value) || 0;
+      
+      if (!name || !sclass || !phone) {
+        showStatus("Please fill in all required fields (Name, Class, Phone)", "error");
+        return;
+      }
 
-  const total = tuition + adm + books;
-  const newStudent = { 
-    name, 
-    class: sclass, 
-    phone, 
-    tuition, 
-    adm, 
-    books, 
-    paid: 0, 
-    total, 
-    balance: total 
-  };
-  
-  try {
-    const { error } = await supabase
-      .from('students')
-      .insert([newStudent]);
+      const total = tuition + adm + books;
+      const newStudent = { 
+        name, 
+        class: sclass, 
+        phone, 
+        tuition, 
+        adm, 
+        books, 
+        paid: 0, 
+        total, 
+        balance: total 
+      };
+      
+      try {
+        console.log('Attempting to insert student:', newStudent);
+        const { data, error } = await supabase
+          .from('students')
+          .insert([newStudent])
+          .select();
+        console.log('Inserted student:', data);
+        if (error) {
+          console.error('Insert error:', error);
+          throw new Error(error.message);
+        }
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    this.reset();
-    await Promise.all([renderStudentList(), populateStudents()]);
-    showStatus(`Student ${name} added successfully!`, "success");
-    
-  } catch (error) {
-    console.error('Error adding student:', error);
-    showStatus(`Error adding student: ${error.message}`, "error");
-  }
-});
+        this.reset();
+        await Promise.all([renderStudentList(), populateStudents()]);
+        showStatus(`Student ${name} added successfully!`, "success");
+        
+      } catch (error) {
+        console.error('Error adding student:', error);
+        showStatus(`Error adding student: ${error.message}`, "error");
+      }
+    });
 
     // Render student list in modal
     async function renderStudentList() {
@@ -439,7 +433,7 @@ document.getElementById("studentForm").addEventListener("submit", async function
         data.forEach((student) => {
           const li = document.createElement("li");
           li.innerHTML = `
-            <strong>${student.name}</strong> (${student.class}) - ${student.phone}<br>
+            <strong>${student.name || '-'}</strong> (${student.class || '-'}) - ${student.phone || '-'}<br>
             <small>Total: KES ${(student.total || 0).toLocaleString()}, Paid: KES ${(student.paid || 0).toLocaleString()}, Balance: KES ${(student.balance || 0).toLocaleString()}</small>
             <button onclick="deleteStudent('${student.id}')" style="margin-left:10px; background:#dc3545; color:white; border:none; padding:2px 6px; border-radius:3px;">Delete</button>
           `;
@@ -455,7 +449,6 @@ document.getElementById("studentForm").addEventListener("submit", async function
     async function deleteStudent(id) {
       if (confirm("Are you sure you want to delete this student? This will also delete all their receipts.")) {
         try {
-          // First delete receipts for this student
           const { error: receiptError } = await supabase
             .from('receipts')
             .delete()
@@ -465,7 +458,6 @@ document.getElementById("studentForm").addEventListener("submit", async function
             console.warn('Error deleting receipts:', receiptError);
           }
 
-          // Then delete the student
           const { error: studentError } = await supabase
             .from('students')
             .delete()
@@ -508,10 +500,9 @@ document.getElementById("studentForm").addEventListener("submit", async function
       }
     }
 
-    // Print receipt function (simplified for debugging)
+    // Print receipt function
     async function printReceipt(receipt, index) {
       try {
-        // Get student data for printing
         let student = null;
         if (receipt.student_id) {
           const { data, error } = await supabase
@@ -586,7 +577,7 @@ document.getElementById("studentForm").addEventListener("submit", async function
       }
     }
 
-    // Export PDF function (simplified)
+    // Export PDF function
     async function exportPDF() {
       try {
         showStatus("Generating PDF...", "loading");
@@ -608,7 +599,6 @@ document.getElementById("studentForm").addEventListener("submit", async function
           return;
         }
 
-        // Add title
         doc.setFontSize(16);
         doc.text("HERIWADI CHRISTIAN SCHOOLS - RECEIPTS", 20, 20);
         
@@ -621,11 +611,11 @@ document.getElementById("studentForm").addEventListener("submit", async function
           
           doc.setFontSize(12);
           doc.text(`Receipt ${index + 1}:`, 20, yPos);
-          doc.text(`Student: ${receipt.name}`, 20, yPos + 10);
-          doc.text(`Class: ${receipt.class}`, 20, yPos + 20);
-          doc.text(`Amount: KES ${Number(receipt.paid).toLocaleString()}`, 20, yPos + 30);
-          doc.text(`Balance: KES ${Number(receipt.balance).toLocaleString()}`, 20, yPos + 40);
-          doc.text(`Mode: ${receipt.mode}`, 20, yPos + 50);
+          doc.text(`Student: ${receipt.name || '-'}`, 20, yPos + 10);
+          doc.text(`Class: ${receipt.class || '-'}`, 20, yPos + 20);
+          doc.text(`Amount: KES ${Number(receipt.paid || 0).toLocaleString()}`, 20, yPos + 30);
+          doc.text(`Balance: KES ${Number(receipt.balance || 0).toLocaleString()}`, 20, yPos + 40);
+          doc.text(`Mode: ${receipt.mode || '-'}`, 20, yPos + 50);
           
           yPos += 70;
         });
@@ -644,13 +634,11 @@ document.getElementById("studentForm").addEventListener("submit", async function
       showStatus("Initializing application...", "loading");
       
       try {
-        // Test Supabase connection
         const { error } = await supabase.from('students').select('id').limit(1);
         if (error) {
           throw new Error(`Database connection failed: ${error.message}`);
         }
         
-        // Load initial data
         await Promise.all([populateStudents(), updateReceiptTable()]);
         showStatus("Application initialized successfully!", "success");
         

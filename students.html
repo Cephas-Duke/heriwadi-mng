@@ -226,7 +226,7 @@
 
     <div id="studentModal" class="modal">
       <div class="modal-content">
-        <span class="close" onclick="closeModal()">&times;</span>
+        <span class="close" onclick="closeModal()">×</span>
         <div id="modalContent"></div>
       </div>
     </div>
@@ -244,9 +244,16 @@
     const studentsTableBody = document.getElementById('studentsTableBody');
     let editingStudentId = null;
 
-    // Load students when page loads
+    // Load students and set up real-time subscription
     document.addEventListener('DOMContentLoaded', () => {
       loadStudents();
+      supabase
+        .channel('students-changes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'students' }, (payload) => {
+          console.log('New student added:', payload);
+          loadStudents();
+        })
+        .subscribe();
     });
 
     // Form submission
@@ -261,39 +268,42 @@
         adm: parseFloat(document.getElementById('adm').value) || 0,
         books: parseFloat(document.getElementById('books').value) || 0,
         paid: parseFloat(document.getElementById('paid').value) || 0,
-        total: 0, // Will be calculated
-        balance: 0 // Will be calculated
+        total: 0,
+        balance: 0
       };
 
-      // Calculate totals
       studentData.total = studentData.tuition + studentData.adm + studentData.books;
       studentData.balance = studentData.total - studentData.paid;
 
-      // Validate
       if (!studentData.name || !studentData.class) {
         showStatus('Name and Class are required', 'error');
         return;
       }
 
       try {
+        console.log('Saving student:', studentData);
         if (editingStudentId) {
-          // Update existing student
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('students')
             .update(studentData)
-            .eq('id', editingStudentId);
-
-          if (error) throw error;
-          
+            .eq('id', editingStudentId)
+            .select();
+          console.log('Updated student:', data);
+          if (error) {
+            console.error('Update error:', error);
+            throw error;
+          }
           showStatus('Student updated successfully', 'success');
         } else {
-          // Add new student
-          const { error } = await supabase
+          const { data, error } = await supabase
             .from('students')
-            .insert([studentData]);
-
-          if (error) throw error;
-          
+            .insert([studentData])
+            .select();
+          console.log('Inserted student:', data);
+          if (error) {
+            console.error('Insert error:', error);
+            throw error;
+          }
           showStatus('Student added successfully', 'success');
         }
 
@@ -328,7 +338,8 @@
         }
 
         const { data: students, error } = await query;
-
+        console.log('Fetched students:', students);
+        console.log('Error:', error);
         if (error) throw error;
 
         renderStudentsTable(students || []);
@@ -349,15 +360,16 @@
       }
 
       students.forEach(student => {
+        console.log('Rendering student:', student);
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${student.name}</td>
-          <td>${student.class}</td>
+          <td>${student.name || '-'}</td>
+          <td>${student.class || '-'}</td>
           <td>${student.phone || '-'}</td>
-          <td>KES ${student.total.toFixed(2)}</td>
-          <td>KES ${student.paid.toFixed(2)}</td>
-          <td style="color: ${student.balance > 0 ? 'red' : 'green'}">
-            KES ${student.balance.toFixed(2)}
+          <td>KES ${(student.total || 0).toFixed(2)}</td>
+          <td>KES ${(student.paid || 0).toFixed(2)}</td>
+          <td style="color: ${(student.balance || 0) > 0 ? 'red' : 'green'}">
+            KES ${(student.balance || 0).toFixed(2)}
           </td>
           <td>
             <button onclick="editStudent('${student.id}')">Edit</button>
@@ -379,18 +391,17 @@
 
         if (error) throw error;
 
-        // Fill form with student data
-        document.getElementById('studentName').value = student.name;
-        document.getElementById('studentClass').value = student.class;
+        document.getElementById('studentName').value = student.name || '';
+        document.getElementById('studentClass').value = student.class || '';
         document.getElementById('phone').value = student.phone || '';
-        document.getElementById('tuition').value = student.tuition;
-        document.getElementById('adm').value = student.adm;
-        document.getElementById('books').value = student.books;
-        document.getElementById('paid').value = student.paid;
+        document.getElementById('tuition').value = student.tuition || 0;
+        document.getElementById('adm').value = student.adm || 0;
+        document.getElementById('books').value = student.books || 0;
+        document.getElementById('paid').value = student.paid || 0;
 
         editingStudentId = student.id;
         submitButton.textContent = 'Update Student';
-        showStatus(`Editing ${student.name}`, 'info');
+        showStatus(`Editing ${student.name || 'student'}`, 'info');
       } catch (error) {
         console.error('Error editing student:', error);
         showStatus(`Error: ${error.message}`, 'error');
