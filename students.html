@@ -233,10 +233,10 @@
   </main>
 
   <script>
-    // Initialize Supabase
+    // Initialize Supabase - FIXED: Using window.supabase instead of Supabase
     const supabaseUrl = 'https://cirsjhoesjahtnvpqraf.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpcnNqaG9lc2phaHRudnBxcmFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTEyMjMzMjYsImV4cCI6MjA2Njc5OTMyNn0.EA9tMUHMzDrJLWIyo8yrGsxAJsuwzbRB57n-rMzTTQ8';
-    const supabase = Supabase.createClient(supabaseUrl, supabaseKey);
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     // DOM elements
     const form = document.getElementById('studentForm');
